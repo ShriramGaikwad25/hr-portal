@@ -1,52 +1,109 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { UsersGrid, type UserRow } from "./UsersGrid";
 
 const NEW_USER_KEY = "hr-portal-new-user";
+const EDIT_USER_KEY = "hr-portal-edit-user";
+const UPDATED_USER_KEY = "hr-portal-updated-user";
+const EMPLOYEES_API = "/api/employees";
 
-const initialUsers: UserRow[] = [
-  {
-    firstName: "John",
-    lastName: "Doe",
-    department: "Engineering",
-    email: "john.doe@company.com",
-    status: "Active",
-    jobTitle: "Software Engineer",
-  },
-  {
-    firstName: "Jane",
-    lastName: "Smith",
-    department: "Human Resources",
-    email: "jane.smith@company.com",
-    status: "Active",
-    jobTitle: "HR Manager",
-  },
-  {
-    firstName: "Mike",
-    lastName: "Johnson",
-    department: "Sales",
-    email: "mike.johnson@company.com",
-    status: "Inactive",
-    jobTitle: "Sales Representative",
-  },
-];
+type ApiEmployee = {
+  employeeId: string;
+  employeeNumber: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  department: string;
+  title: string;
+  status: string;
+  managerId: string | null;
+  managerName: string | null;
+  hireDate: string;
+  terminationDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+function mapApiToUserRow(emp: ApiEmployee): UserRow {
+  return {
+    firstName: emp.firstName,
+    lastName: emp.lastName,
+    department: emp.department,
+    email: emp.email,
+    status: emp.status === "ACTIVE" ? "Active" : "Inactive",
+    jobTitle: emp.title,
+    employeeId: emp.employeeId,
+    managerId: emp.managerId ?? undefined,
+    managerName: emp.managerName ?? undefined,
+  };
+}
 
 export default function ManageUserPage() {
-  const [users, setUsers] = useState<UserRow[]>(initialUsers);
+  const router = useRouter();
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const stored = sessionStorage.getItem(NEW_USER_KEY);
-    if (stored) {
-      try {
-        const newUser = JSON.parse(stored) as UserRow;
-        setUsers((prev) => [...prev, newUser]);
-      } finally {
-        sessionStorage.removeItem(NEW_USER_KEY);
+  const fetchEmployees = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(EMPLOYEES_API);
+      if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
+      const data = (await res.json()) as ApiEmployee[];
+      let list = data.map(mapApiToUserRow);
+
+      const newUserStored = sessionStorage.getItem(NEW_USER_KEY);
+      if (newUserStored) {
+        try {
+          const newUser = JSON.parse(newUserStored) as UserRow;
+          list = [...list, newUser];
+        } finally {
+          sessionStorage.removeItem(NEW_USER_KEY);
+        }
       }
+
+      const updatedStored = sessionStorage.getItem(UPDATED_USER_KEY);
+      if (updatedStored) {
+        try {
+          const updated = JSON.parse(updatedStored) as UserRow;
+          list = list.map((u) => {
+            if (updated.employeeId && u.employeeId === updated.employeeId)
+              return updated;
+            if (
+              !updated.employeeId &&
+              u.email === updated.email &&
+              u.firstName === updated.firstName &&
+              u.lastName === updated.lastName
+            )
+              return updated;
+            return u;
+          });
+        } finally {
+          sessionStorage.removeItem(UPDATED_USER_KEY);
+        }
+      }
+
+      setUsers(list);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load employees");
+      setUsers([]);
+    } finally {
+      setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
+
+  function openEdit(row: UserRow) {
+    sessionStorage.setItem(EDIT_USER_KEY, JSON.stringify(row));
+    router.push("/dashboard/users/create");
+  }
 
   return (
     <div className="px-6 py-8 lg:px-10 lg:py-12">
@@ -63,7 +120,15 @@ export default function ManageUserPage() {
       </div>
 
       <div className="mt-8">
-        <UsersGrid rowData={users} />
+        {loading && (
+          <p className="text-slate-600 dark:text-slate-400">Loading employees…</p>
+        )}
+        {error && (
+          <p className="text-red-600 dark:text-red-400">{error}</p>
+        )}
+        {!loading && !error && (
+          <UsersGrid rowData={users} onEdit={openEdit} />
+        )}
       </div>
     </div>
   );
