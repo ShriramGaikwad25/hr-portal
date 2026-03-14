@@ -18,38 +18,56 @@ export type UserRow = {
   managerName?: string;
 };
 
-type EditIconCellParams = ICellRendererParams<UserRow> & {
-  context?: { onEdit?: (row: UserRow) => void };
+type ActionsCellParams = ICellRendererParams<UserRow> & {
+  context?: { onEdit?: (row: UserRow) => void; onDelete?: (row: UserRow) => void };
 };
 
-function EditIconCell(props: EditIconCellParams) {
-  const onEdit = props.context?.onEdit;
+function ActionsCell(props: ActionsCellParams) {
+  const { onEdit, onDelete } = props.context ?? {};
   const row = props.data;
   return (
-    <button
-      type="button"
-      className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
-      aria-label="Edit"
-      onClick={() => row && onEdit?.(row)}
-    >
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-        />
-      </svg>
-    </button>
+    <div className="flex items-center gap-4">
+      <button
+        type="button"
+        className="flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
+        aria-label="Edit"
+        onClick={() => row && onEdit?.(row)}
+      >
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+          />
+        </svg>
+      </button>
+      <button
+        type="button"
+        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
+        aria-label="Delete"
+        onClick={() => row && onDelete?.(row)}
+      >
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+          />
+        </svg>
+      </button>
+    </div>
   );
 }
 
 type UsersGridProps = {
   rowData: UserRow[];
   onEdit?: (row: UserRow) => void;
+  onDelete?: (row: UserRow) => void;
 };
 
-export function UsersGrid({ rowData, onEdit }: UsersGridProps) {
+export function UsersGrid({ rowData, onEdit, onDelete }: UsersGridProps) {
   const columnDefs = useMemo<ColDef<UserRow>[]>(
     () => [
       { field: "firstName", headerName: "First Name", flex: 1, minWidth: 120 },
@@ -67,13 +85,13 @@ export function UsersGrid({ rowData, onEdit }: UsersGridProps) {
       { field: "jobTitle", headerName: "Job Title", flex: 1, minWidth: 150 },
       {
         headerName: "",
-        width: 64,
-        minWidth: 64,
-        maxWidth: 64,
+        width: 88,
+        minWidth: 88,
+        maxWidth: 88,
         sortable: false,
         filter: false,
         resizable: false,
-        cellRenderer: EditIconCell,
+        cellRenderer: ActionsCell,
       },
     ],
     []
@@ -88,7 +106,7 @@ export function UsersGrid({ rowData, onEdit }: UsersGridProps) {
     []
   );
 
-  const context = useMemo(() => ({ onEdit }), [onEdit]);
+  const context = useMemo(() => ({ onEdit, onDelete }), [onEdit, onDelete]);
 
   return (
     <div className="mt-8 w-full">

@@ -10,6 +10,7 @@ export type UpdateEmployeePayload = {
   title: string;
   status: string;
   managerId: string | null;
+  terminationDate?: string | null;
 };
 
 export async function PUT(
@@ -48,6 +49,42 @@ export async function PUT(
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Failed to update employee" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ employeeId: string }> }
+) {
+  const { employeeId } = await params;
+  if (!employeeId) {
+    return NextResponse.json(
+      { error: "employeeId is required" },
+      { status: 400 }
+    );
+  }
+  try {
+    const res = await fetch(`${EMPLOYEES_API_BASE}/${employeeId}`, {
+      method: "DELETE",
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: text || `Upstream returned ${res.status}` },
+        { status: res.status }
+      );
+    }
+    try {
+      const data = JSON.parse(text);
+      return NextResponse.json(data);
+    } catch {
+      return NextResponse.json({ success: true, message: text || "Employee deleted" });
+    }
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Failed to delete employee" },
       { status: 500 }
     );
   }

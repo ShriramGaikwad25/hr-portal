@@ -81,6 +81,10 @@ export default function CreateUserPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showTerminateModal, setShowTerminateModal] = useState(false);
+  const [terminateDate, setTerminateDate] = useState("");
+  const [terminateLoading, setTerminateLoading] = useState(false);
+  const [terminateError, setTerminateError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -179,12 +183,57 @@ export default function CreateUserPage() {
 
   const editingEmployeeId = isEditMode ? form.employeeId : undefined;
 
+  async function handleTerminateConfirm() {
+    if (!form.employeeId || !terminateDate) return;
+    setTerminateLoading(true);
+    setTerminateError(null);
+    try {
+      const url = `/api/employees/${form.employeeId}/terminate?terminationDate=${encodeURIComponent(terminateDate)}`;
+      const res = await fetch(url, { method: "POST" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error((data as { error?: string }).error || `Terminate failed: ${res.status}`);
+      }
+      setShowTerminateModal(false);
+      setTerminateDate("");
+      router.push("/dashboard/users");
+    } catch (err) {
+      setTerminateError(err instanceof Error ? err.message : "Terminate failed");
+    } finally {
+      setTerminateLoading(false);
+    }
+  }
+
   return (
     <div className="px-6 py-8 lg:px-10 lg:py-12">
       <div className="w-full">
-        <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-          {isEditMode ? "Edit User" : "Create User"}
-        </h2>
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+            {isEditMode ? "Edit User" : "Create User"}
+          </h2>
+          {isEditMode && (
+            <button
+              type="button"
+              onClick={() => {
+                setTerminateError(null);
+                setTerminateDate(new Date().toISOString().slice(0, 10));
+                setShowTerminateModal(true);
+              }}
+              className="flex items-center gap-2 rounded-lg border border-amber-500/60 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-900/20 dark:text-amber-200 dark:hover:bg-amber-900/30"
+              aria-label="Terminate employee"
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
+                />
+              </svg>
+              Terminate
+            </button>
+          )}
+        </div>
 
         <form onSubmit={handleSubmit} className="mt-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -337,6 +386,65 @@ export default function CreateUserPage() {
           </div>
         </form>
       </div>
+
+      {showTerminateModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="terminate-dialog-title"
+        >
+          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800">
+            <h3 id="terminate-dialog-title" className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+              Terminate employee
+            </h3>
+            <p className="mt-2 text-slate-600 dark:text-slate-400">
+              Set a termination date for{" "}
+              <span className="font-medium text-slate-900 dark:text-slate-100">
+                {form.firstName} {form.lastName}
+              </span>
+              .
+            </p>
+            <div className="mt-4">
+              <label htmlFor="terminate-date" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Termination date
+              </label>
+              <input
+                id="terminate-date"
+                type="date"
+                required
+                value={terminateDate}
+                onChange={(e) => setTerminateDate(e.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 focus:border-[#0045ff] focus:outline-none focus:ring-1 focus:ring-[#0045ff] dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
+              />
+            </div>
+            {terminateError && (
+              <p className="mt-3 text-sm text-red-600 dark:text-red-400">{terminateError}</p>
+            )}
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                disabled={terminateLoading}
+                onClick={() => {
+                  setTerminateError(null);
+                  setShowTerminateModal(false);
+                }}
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={terminateLoading || !terminateDate}
+                onClick={handleTerminateConfirm}
+                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-slate-800"
+              >
+                {terminateLoading ? "Saving…" : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
