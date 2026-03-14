@@ -79,8 +79,12 @@ export function UsersGrid({ rowData, onEdit, onDelete }: UsersGridProps) {
         headerName: "Status",
         flex: 1,
         minWidth: 100,
-        cellClass: (params) =>
-          params.value?.toUpperCase() === "ACTIVE" ? "text-emerald-600 font-medium" : "text-slate-500",
+        cellClass: (params) => {
+          const v = params.value?.toUpperCase();
+          if (v === "ACTIVE") return "text-emerald-600 font-medium";
+          if (v === "TERMINATED") return "text-amber-600 font-medium dark:text-amber-400";
+          return "text-slate-500";
+        },
       },
       { field: "jobTitle", headerName: "Job Title", flex: 1, minWidth: 150 },
       {

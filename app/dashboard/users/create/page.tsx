@@ -88,6 +88,7 @@ export default function CreateUserPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (isEditMode && form.status === "Terminated") return;
     if (isEditMode && form.employeeId) {
       setSubmitting(true);
       setSubmitError(null);
@@ -178,10 +179,13 @@ export default function CreateUserPage() {
 
   const inputClass =
     "w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-[#0045ff] focus:outline-none focus:ring-1 focus:ring-[#0045ff] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500";
+  const inputDisabledClass =
+    inputClass + " cursor-not-allowed bg-slate-100 opacity-90 dark:bg-slate-800/80";
   const labelClass =
     "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
 
   const editingEmployeeId = isEditMode ? form.employeeId : undefined;
+  const isTerminatedView = isEditMode && form.status === "Terminated";
 
   async function handleTerminateConfirm() {
     if (!form.employeeId || !terminateDate) return;
@@ -211,7 +215,7 @@ export default function CreateUserPage() {
           <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
             {isEditMode ? "Edit User" : "Create User"}
           </h2>
-          {isEditMode && (
+          {isEditMode && !isTerminatedView && (
             <button
               type="button"
               onClick={() => {
@@ -249,8 +253,9 @@ export default function CreateUserPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, firstName: e.target.value }))
                 }
-                className={inputClass}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
                 placeholder="First name"
+                disabled={isTerminatedView}
               />
             </div>
             <div>
@@ -265,8 +270,9 @@ export default function CreateUserPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, lastName: e.target.value }))
                 }
-                className={inputClass}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
                 placeholder="Last name"
+                disabled={isTerminatedView}
               />
             </div>
             <div>
@@ -281,8 +287,9 @@ export default function CreateUserPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, department: e.target.value }))
                 }
-                className={inputClass}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
                 placeholder="Department"
+                disabled={isTerminatedView}
               />
             </div>
             <div>
@@ -297,8 +304,9 @@ export default function CreateUserPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, email: e.target.value }))
                 }
-                className={inputClass}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
                 placeholder="email@company.com"
+                disabled={isTerminatedView}
               />
             </div>
             <div>
@@ -311,10 +319,14 @@ export default function CreateUserPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, status: e.target.value }))
                 }
-                className={inputClass}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
               >
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
+                {isTerminatedView && (
+                  <option value="Terminated">Terminated</option>
+                )}
               </select>
             </div>
             <div>
@@ -329,8 +341,9 @@ export default function CreateUserPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, jobTitle: e.target.value }))
                 }
-                className={inputClass}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
                 placeholder="Job title"
+                disabled={isTerminatedView}
               />
             </div>
             <div>
@@ -343,8 +356,8 @@ export default function CreateUserPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, managerId: e.target.value }))
                 }
-                className={inputClass}
-                disabled={managersLoading}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={managersLoading || isTerminatedView}
               >
                 <option value=""></option>
                 {managers
@@ -370,19 +383,21 @@ export default function CreateUserPage() {
             >
               Cancel
             </Link>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-lg bg-[#0045ff] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
-            >
-              {submitting
-              ? isEditMode
-                ? "Updating…"
-                : "Creating…"
-              : isEditMode
-                ? "Update"
-                : "Submit"}
-            </button>
+            {!isTerminatedView && (
+              <button
+                type="submit"
+                disabled={submitting}
+                className="rounded-lg bg-[#0045ff] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
+              >
+                {submitting
+                  ? isEditMode
+                    ? "Updating…"
+                    : "Creating…"
+                  : isEditMode
+                    ? "Update"
+                    : "Submit"}
+              </button>
+            )}
           </div>
         </form>
       </div>

@@ -28,12 +28,21 @@ type ApiEmployee = {
 };
 
 function mapApiToUserRow(emp: ApiEmployee): UserRow {
+  const statusUpper = (emp.status ?? "").toUpperCase();
+  const statusDisplay =
+    statusUpper === "ACTIVE"
+      ? "Active"
+      : statusUpper === "TERMINATED"
+        ? "Terminated"
+        : statusUpper === "INACTIVE"
+          ? "Inactive"
+          : emp.status ?? "Inactive";
   return {
     firstName: emp.firstName,
     lastName: emp.lastName,
     department: emp.department,
     email: emp.email,
-    status: emp.status === "ACTIVE" ? "Active" : "Inactive",
+    status: statusDisplay,
     jobTitle: emp.title,
     employeeId: emp.employeeId,
     managerId: emp.managerId ?? undefined,
