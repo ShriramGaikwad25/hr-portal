@@ -30,27 +30,29 @@ export default function DashboardLayout({
 
   if (!mounted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-slate-500">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 font-sans dark:bg-slate-950">
+    <div className="min-h-screen bg-gray-50 font-sans">
       <Navbar
         onToggleSidebar={() => setSidebarOpen((open) => !open)}
         sidebarOpen={sidebarOpen}
         onLogout={handleLogout}
       />
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        <Sidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
-        <main className="flex-1 overflow-auto min-w-0">
-          {children}
-        </main>
+      <div className="pt-20">
+        <div className="max-w-screen-2xl mx-auto w-full">
+          <Sidebar
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+          <main className="ml-72 h-[calc(100vh-80px)] overflow-auto p-10">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );

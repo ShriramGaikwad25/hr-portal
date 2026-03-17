@@ -161,7 +161,7 @@ export default function ManageUserPage() {
     <div className="px-6 py-8 lg:px-10 lg:py-12">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-          Manage User
+          Manage Employee
         </h2>
         <Link
           href="/dashboard/users/create"
