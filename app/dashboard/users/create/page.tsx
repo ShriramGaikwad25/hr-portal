@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { UserRow } from "../UsersGrid";
 
 const NEW_USER_KEY = "hr-portal-new-user";
@@ -85,6 +85,33 @@ export default function CreateUserPage() {
   const [terminateDate, setTerminateDate] = useState("");
   const [terminateLoading, setTerminateLoading] = useState(false);
   const [terminateError, setTerminateError] = useState<string | null>(null);
+  const [managerDropdownOpen, setManagerDropdownOpen] = useState(false);
+  const managerDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        managerDropdownRef.current &&
+        !managerDropdownRef.current.contains(event.target as Node)
+      ) {
+        setManagerDropdownOpen(false);
+      }
+    }
+    if (managerDropdownOpen) {
+      document.addEventListener("click", handleClickOutside);
+    }
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [managerDropdownOpen]);
+
+  const editingEmployeeId = isEditMode ? form.employeeId : undefined;
+  const isTerminatedView = isEditMode && form.status === "Terminated";
+
+  const managerOptions = managers.filter(
+    (emp) => emp.employeeId !== editingEmployeeId
+  );
+  const selectedManager = form.managerId
+    ? managerOptions.find((emp) => emp.employeeId === form.managerId)
+    : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -183,9 +210,6 @@ export default function CreateUserPage() {
     inputClass + " cursor-not-allowed bg-slate-100 opacity-90 dark:bg-slate-800/80";
   const labelClass =
     "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
-
-  const editingEmployeeId = isEditMode ? form.employeeId : undefined;
-  const isTerminatedView = isEditMode && form.status === "Terminated";
 
   async function handleTerminateConfirm() {
     if (!form.employeeId || !terminateDate) return;
@@ -346,31 +370,79 @@ export default function CreateUserPage() {
                 disabled={isTerminatedView}
               />
             </div>
-            <div>
-              <label htmlFor="manager" className={labelClass}>
+            <div ref={managerDropdownRef}>
+              <label id="manager-label" className={labelClass}>
                 Manager
               </label>
-              <select
-                id="manager"
-                value={form.managerId}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, managerId: e.target.value }))
-                }
-                className={isTerminatedView ? inputDisabledClass : inputClass}
-                disabled={managersLoading || isTerminatedView}
-              >
-                <option value=""></option>
-                {managers
-                  .filter(
-                    (emp) => emp.employeeId !== editingEmployeeId
-                  )
-                  .map((emp) => (
-                    <option key={emp.employeeId} value={emp.employeeId}>
-                      {emp.firstName} {emp.lastName}
-                      {emp.employeeNumber ? ` (${emp.employeeNumber})` : ""}
-                    </option>
-                  ))}
-              </select>
+              <div className="relative">
+                <button
+                  type="button"
+                  id="manager"
+                  aria-haspopup="listbox"
+                  aria-expanded={managerDropdownOpen}
+                  aria-labelledby="manager-label"
+                  onClick={() =>
+                    !managersLoading &&
+                    !isTerminatedView &&
+                    setManagerDropdownOpen((open) => !open)
+                  }
+                  disabled={managersLoading || isTerminatedView}
+                  className={`w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-left text-slate-900 focus:border-[#0045ff] focus:outline-none focus:ring-1 focus:ring-[#0045ff] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 ${
+                    isTerminatedView || managersLoading
+                      ? "cursor-not-allowed bg-slate-100 opacity-90 dark:bg-slate-800/80"
+                      : ""
+                  } flex items-center justify-between gap-2`}
+                >
+                  <span className="truncate">
+                    {selectedManager
+                      ? `${selectedManager.firstName} ${selectedManager.lastName}${selectedManager.employeeNumber ? ` (${selectedManager.employeeNumber})` : ""}`
+                      : "Select manager"}
+                  </span>
+                  <svg
+                    className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${managerDropdownOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {managerDropdownOpen && (
+                  <ul
+                    role="listbox"
+                    aria-labelledby="manager-label"
+                    className="absolute z-10 mt-1 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-800"
+                    style={{ maxHeight: "12.5rem" }}
+                  >
+                    <li
+                      role="option"
+                      aria-selected={!form.managerId}
+                      className="cursor-pointer px-4 py-2.5 text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-700"
+                      onClick={() => {
+                        setForm((p) => ({ ...p, managerId: "" }));
+                        setManagerDropdownOpen(false);
+                      }}
+                    >
+                      —
+                    </li>
+                    {managerOptions.map((emp) => (
+                      <li
+                        key={emp.employeeId}
+                        role="option"
+                        aria-selected={form.managerId === emp.employeeId}
+                        className="cursor-pointer px-4 py-2.5 text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-700"
+                        onClick={() => {
+                          setForm((p) => ({ ...p, managerId: emp.employeeId }));
+                          setManagerDropdownOpen(false);
+                        }}
+                      >
+                        {emp.firstName} {emp.lastName}
+                        {emp.employeeNumber ? ` (${emp.employeeNumber})` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </div>
           {submitError && (

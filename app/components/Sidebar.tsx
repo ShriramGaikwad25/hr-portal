@@ -24,7 +24,7 @@ type SidebarProps = {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const [expanded, setExpanded] = useState<Record<SidebarSection, boolean>>({
-    employees: true,
+    employees: false,
     leave: false,
     payroll: false,
     benefits: false,
@@ -44,7 +44,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   }
 
   return (
-    <aside className="fixed top-20 left-0 w-72 bg-white border-r h-[calc(100vh-80px)] overflow-y-auto shadow-inner pt-8 px-4">
+    <aside className="sidebar-thin-scroll fixed top-20 left-0 w-72 bg-white border-r h-[calc(100vh-80px)] overflow-y-auto shadow-inner pt-8 px-4">
       <div className="px-4 mb-8">
         <Link
           href="/dashboard"

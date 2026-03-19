@@ -23,7 +23,8 @@ export async function GET() {
       );
     }
     const data = await res.json();
-    return NextResponse.json(data);
+    const list = Array.isArray(data?.Resources) ? data.Resources : data;
+    return NextResponse.json(Array.isArray(list) ? list : []);
   } catch (e) {
     return NextResponse.json(
       { error: e instanceof Error ? e.message : "Failed to fetch employees" },

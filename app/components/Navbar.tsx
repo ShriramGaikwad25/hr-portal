@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 type NavbarProps = {
@@ -38,9 +39,13 @@ export function Navbar({ onToggleSidebar, sidebarOpen, onLogout }: NavbarProps) 
     <nav className="fixed top-0 left-0 right-0 z-30 bg-indigo-700 text-white shadow-lg">
       <div className="max-w-screen-2xl mx-auto px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-white rounded-2xl flex items-center justify-center text-indigo-700 font-bold text-3xl">
-            HR
-          </div>
+          <Image
+            src="/Paycom_logo.svg"
+            alt="Paycom"
+            width={140}
+            height={32}
+            className="h-8 w-auto"
+          />
           <span className="text-2xl font-semibold tracking-tight">HR Portal</span>
         </div>
 

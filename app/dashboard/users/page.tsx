@@ -19,12 +19,14 @@ type ApiEmployee = {
   department: string;
   title: string;
   status: string;
-  managerId: string | null;
-  managerName: string | null;
+  managerId?: string | null;
+  managerName?: string | null;
   hireDate: string;
-  terminationDate: string | null;
+  terminationDate?: string | null;
   createdAt: string;
   updatedAt: string;
+  dob?: string;
+  username?: string;
 };
 
 function mapApiToUserRow(emp: ApiEmployee): UserRow {
