@@ -19,14 +19,9 @@ type ApiEmployee = {
   department: string;
   title: string;
   status: string;
+  username?: string;
   managerId?: string | null;
   managerName?: string | null;
-  hireDate: string;
-  terminationDate?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  dob?: string;
-  username?: string;
 };
 
 function mapApiToUserRow(emp: ApiEmployee): UserRow {
@@ -47,6 +42,7 @@ function mapApiToUserRow(emp: ApiEmployee): UserRow {
     status: statusDisplay,
     jobTitle: emp.title,
     employeeId: emp.employeeId,
+    username: emp.username,
     managerId: emp.managerId ?? undefined,
     managerName: emp.managerName ?? undefined,
   };
@@ -57,9 +53,6 @@ export default function ManageUserPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<UserRow | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
@@ -119,46 +112,6 @@ export default function ManageUserPage() {
     router.push("/dashboard/users/create");
   }
 
-  function openDelete(row: UserRow) {
-    setDeleteError(null);
-    setDeleteConfirm(row);
-  }
-
-  async function confirmDelete() {
-    if (!deleteConfirm) return;
-    setDeleteError(null);
-    setDeleteLoading(true);
-    try {
-      if (deleteConfirm.employeeId) {
-        const res = await fetch(`/api/employees/${deleteConfirm.employeeId}`, {
-          method: "DELETE",
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          setDeleteError((data as { error?: string }).error || "Failed to delete employee");
-          return;
-        }
-      }
-      setUsers((prev) =>
-        prev.filter((u) => {
-          if (deleteConfirm.employeeId && u.employeeId === deleteConfirm.employeeId) return false;
-          if (
-            u.email === deleteConfirm.email &&
-            u.firstName === deleteConfirm.firstName &&
-            u.lastName === deleteConfirm.lastName
-          )
-            return false;
-          return true;
-        })
-      );
-      setDeleteConfirm(null);
-    } catch (e) {
-      setDeleteError(e instanceof Error ? e.message : "Failed to delete employee");
-    } finally {
-      setDeleteLoading(false);
-    }
-  }
-
   return (
     <div className="px-6 py-8 lg:px-10 lg:py-12">
       <div className="flex items-center justify-between">
@@ -181,55 +134,9 @@ export default function ManageUserPage() {
           <p className="text-red-600 dark:text-red-400">{error}</p>
         )}
         {!loading && !error && (
-          <UsersGrid rowData={users} onEdit={openEdit} onDelete={openDelete} />
+          <UsersGrid rowData={users} onEdit={openEdit} />
         )}
       </div>
-
-      {deleteConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-dialog-title"
-        >
-          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800">
-            <h3 id="delete-dialog-title" className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-              Delete user?
-            </h3>
-            <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Are you sure you want to delete{" "}
-              <span className="font-medium text-slate-900 dark:text-slate-100">
-                {deleteConfirm.firstName} {deleteConfirm.lastName}
-              </span>
-              ? This action cannot be undone.
-            </p>
-            {deleteError && (
-              <p className="mt-3 text-sm text-red-600 dark:text-red-400">{deleteError}</p>
-            )}
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                disabled={deleteLoading}
-                onClick={() => {
-                  setDeleteError(null);
-                  setDeleteConfirm(null);
-                }}
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={deleteLoading}
-                onClick={confirmDelete}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-slate-800"
-              >
-                {deleteLoading ? "Deleting…" : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

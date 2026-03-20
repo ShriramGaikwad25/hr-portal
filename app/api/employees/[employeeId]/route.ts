@@ -3,14 +3,30 @@ import { NextRequest, NextResponse } from "next/server";
 const EMPLOYEES_API_BASE = "https://preview.keyforge.ai/hrportal/employees";
 
 export type UpdateEmployeePayload = {
-  firstName: string;
+  username: string;
+  active: boolean;
+  firstname: string;
   lastName: string;
-  email: string;
+  fullName: string;
+  emailAddressWork: string;
+  phoneNumberWork: string;
+  phoneNumberHome: string;
+  positionTitle: string;
+  streetAddress: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  city: string;
+  continousServiceDate: string;
+  terminationDate: string | null;
+  managerID: string;
+  costCenterId: string;
+  organizationName: string;
+  workerType: string;
+  employeeID: string;
   department: string;
-  title: string;
-  status: string;
-  managerId: string | null;
-  terminationDate?: string | null;
+  lastModifiedBy: null;
+  tenantId: null;
 };
 
 export async function PUT(
@@ -26,7 +42,8 @@ export async function PUT(
   }
   try {
     const body = (await request.json()) as UpdateEmployeePayload;
-    const res = await fetch(`${EMPLOYEES_API_BASE}/${employeeId}`, {
+    const targetIdentifier = body.username?.trim() || employeeId;
+    const res = await fetch(`${EMPLOYEES_API_BASE}/${encodeURIComponent(targetIdentifier)}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

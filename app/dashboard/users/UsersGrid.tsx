@@ -14,19 +14,20 @@ export type UserRow = {
   status: string;
   jobTitle: string;
   employeeId?: string;
+  username?: string;
   managerId?: string;
   managerName?: string;
 };
 
 type ActionsCellParams = ICellRendererParams<UserRow> & {
-  context?: { onEdit?: (row: UserRow) => void; onDelete?: (row: UserRow) => void };
+  context?: { onEdit?: (row: UserRow) => void };
 };
 
 function ActionsCell(props: ActionsCellParams) {
-  const { onEdit, onDelete } = props.context ?? {};
+  const { onEdit } = props.context ?? {};
   const row = props.data;
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center">
       <button
         type="button"
         className="flex h-8 w-8 items-center justify-center rounded-lg text-blue-600 transition-colors hover:bg-blue-50 hover:text-blue-700 dark:text-blue-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-300"
@@ -42,21 +43,6 @@ function ActionsCell(props: ActionsCellParams) {
           />
         </svg>
       </button>
-      <button
-        type="button"
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-600 transition-colors hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
-        aria-label="Delete"
-        onClick={() => row && onDelete?.(row)}
-      >
-        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-          />
-        </svg>
-      </button>
     </div>
   );
 }
@@ -64,10 +50,11 @@ function ActionsCell(props: ActionsCellParams) {
 type UsersGridProps = {
   rowData: UserRow[];
   onEdit?: (row: UserRow) => void;
-  onDelete?: (row: UserRow) => void;
 };
 
-export function UsersGrid({ rowData, onEdit, onDelete }: UsersGridProps) {
+export function UsersGrid({ rowData, onEdit }: UsersGridProps) {
+  const defaultPageSize = 10;
+
   const columnDefs = useMemo<ColDef<UserRow>[]>(
     () => [
       { field: "firstName", headerName: "First Name", flex: 1, minWidth: 120 },
@@ -110,7 +97,7 @@ export function UsersGrid({ rowData, onEdit, onDelete }: UsersGridProps) {
     []
   );
 
-  const context = useMemo(() => ({ onEdit, onDelete }), [onEdit, onDelete]);
+  const context = useMemo(() => ({ onEdit }), [onEdit]);
 
   return (
     <div className="mt-8 w-full">
@@ -122,6 +109,9 @@ export function UsersGrid({ rowData, onEdit, onDelete }: UsersGridProps) {
         context={context}
         domLayout="autoHeight"
         suppressCellFocus={true}
+        pagination={true}
+        paginationPageSize={defaultPageSize}
+        paginationPageSizeSelector={[10, 25, 50]}
       />
     </div>
   );

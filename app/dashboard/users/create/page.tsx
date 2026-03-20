@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { UserRow } from "../UsersGrid";
 
 const NEW_USER_KEY = "hr-portal-new-user";
@@ -20,26 +20,164 @@ type ApiEmployee = {
   title: string;
   status: string;
   managerId: string | null;
-  managerName: string | null;
+  managerName?: string | null;
+  username?: string;
+  active?: boolean;
+  firstname?: string;
+  emailAddressWork?: string;
+  phoneNumberWork?: string;
+  phoneNumberHome?: string;
+  positionTitle?: string;
+  streetAddress?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
+  city?: string;
+  continousServiceDate?: string;
+  terminationDate?: string | null;
+  managerID?: string;
+  costCenterId?: string;
+  organizationName?: string;
+  workerType?: string;
+  employeeID?: string;
 };
 
-type CreateForm = UserRow & { managerId: string };
+type CreateForm = {
+  employeeId?: string;
+  username: string;
+  active: boolean;
+  firstname: string;
+  lastName: string;
+  emailAddressWork: string;
+  phoneNumberWork: string;
+  phoneNumberHome: string;
+  positionTitle: string;
+  streetAddress: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  city: string;
+  continousServiceDate: string;
+  terminationDate: string;
+  managerID: string;
+  costCenterId: string;
+  organizationName: string;
+  workerType: string;
+  employeeID: string;
+  department: string;
+};
+
+type EmployeePayload = {
+  username: string;
+  active: boolean;
+  firstname: string;
+  lastName: string;
+  fullName: string;
+  emailAddressWork: string;
+  phoneNumberWork: string;
+  phoneNumberHome: string;
+  positionTitle: string;
+  streetAddress: string;
+  state: string;
+  country: string;
+  postalCode: string;
+  city: string;
+  continousServiceDate: string;
+  terminationDate: string | null;
+  managerID: string;
+  costCenterId: string;
+  organizationName: string;
+  workerType: string;
+  employeeID: string;
+  department: string;
+  lastModifiedBy: null;
+  tenantId: null;
+};
 
 const defaultForm: CreateForm = {
-  firstName: "",
+  username: "",
+  active: true,
+  firstname: "",
   lastName: "",
+  emailAddressWork: "",
+  phoneNumberWork: "",
+  phoneNumberHome: "",
+  positionTitle: "",
+  streetAddress: "",
+  state: "",
+  country: "",
+  postalCode: "",
+  city: "",
+  continousServiceDate: "",
+  terminationDate: "",
+  managerID: "",
+  costCenterId: "",
+  organizationName: "",
+  workerType: "Employee",
+  employeeID: "",
   department: "",
-  email: "",
-  status: "Active",
-  jobTitle: "",
-  managerId: "",
 };
+
+function mapEmployeeToForm(emp: ApiEmployee): CreateForm {
+  return {
+    employeeId: emp.employeeId,
+    username: emp.username ?? "",
+    active: emp.active ?? (emp.status ?? "").toUpperCase() === "ACTIVE",
+    firstname: emp.firstname ?? emp.firstName ?? "",
+    lastName: emp.lastName ?? "",
+    emailAddressWork: emp.emailAddressWork ?? emp.email ?? "",
+    phoneNumberWork: emp.phoneNumberWork ?? "",
+    phoneNumberHome: emp.phoneNumberHome ?? "",
+    positionTitle: emp.positionTitle ?? emp.title ?? "",
+    streetAddress: emp.streetAddress ?? "",
+    state: emp.state ?? "",
+    country: emp.country ?? "",
+    postalCode: emp.postalCode ?? "",
+    city: emp.city ?? "",
+    continousServiceDate: emp.continousServiceDate ?? "",
+    terminationDate: emp.terminationDate ?? "",
+    managerID: emp.managerID ?? emp.managerId ?? "",
+    costCenterId: emp.costCenterId ?? "",
+    organizationName: emp.organizationName ?? "",
+    workerType: emp.workerType ?? "Employee",
+    employeeID: emp.employeeID ?? emp.employeeId ?? "",
+    department: emp.department ?? "",
+  };
+}
+
+function toEmployeePayload(form: CreateForm): EmployeePayload {
+  return {
+    username: form.username,
+    active: form.active,
+    firstname: form.firstname,
+    lastName: form.lastName,
+    fullName: `${form.firstname} ${form.lastName}`.trim(),
+    emailAddressWork: form.emailAddressWork,
+    phoneNumberWork: form.phoneNumberWork,
+    phoneNumberHome: form.phoneNumberHome,
+    positionTitle: form.positionTitle,
+    streetAddress: form.streetAddress,
+    state: form.state,
+    country: form.country,
+    postalCode: form.postalCode,
+    city: form.city,
+    continousServiceDate: form.continousServiceDate,
+    terminationDate: form.terminationDate || null,
+    managerID: form.managerID,
+    costCenterId: form.costCenterId,
+    organizationName: form.organizationName,
+    workerType: form.workerType,
+    employeeID: form.employeeID,
+    department: form.department,
+    lastModifiedBy: null,
+    tenantId: null,
+  };
+}
 
 export default function CreateUserPage() {
   const router = useRouter();
   const [form, setForm] = useState<CreateForm>(defaultForm);
   const [managers, setManagers] = useState<ApiEmployee[]>([]);
-  const [managersLoading, setManagersLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
@@ -51,7 +189,7 @@ export default function CreateUserPage() {
         const data = (await res.json()) as ApiEmployee[];
         if (!cancelled) setManagers(data);
       } finally {
-        if (!cancelled) setManagersLoading(false);
+        // no-op
       }
     }
     load();
@@ -65,9 +203,39 @@ export default function CreateUserPage() {
     if (editStored) {
       try {
         const editRow = JSON.parse(editStored) as UserRow;
+        const fullEmployee = managers.find(
+          (emp) =>
+            String(emp.employeeId ?? "") === String(editRow.employeeId ?? "") ||
+            (!!editRow.username && emp.username === editRow.username)
+        );
+        if (fullEmployee) {
+          setForm(mapEmployeeToForm(fullEmployee));
+          setIsEditMode(true);
+          return;
+        }
         setForm({
-          ...editRow,
-          managerId: editRow.managerId ?? "",
+          employeeId: editRow.employeeId,
+          username: editRow.username ?? "",
+          active: editRow.status.toLowerCase() === "active",
+          firstname: editRow.firstName,
+          lastName: editRow.lastName,
+          emailAddressWork: editRow.email,
+          phoneNumberWork: "",
+          phoneNumberHome: "",
+          positionTitle: editRow.jobTitle,
+          streetAddress: "",
+          state: "",
+          country: "",
+          postalCode: "",
+          city: "",
+          continousServiceDate: "",
+          terminationDate: "",
+          managerID: editRow.managerId ?? "",
+          costCenterId: "",
+          organizationName: "",
+          workerType: "Employee",
+          employeeID: editRow.employeeId ?? "",
+          department: editRow.department,
         });
         setIsEditMode(true);
       } catch {
@@ -77,58 +245,19 @@ export default function CreateUserPage() {
       setForm(defaultForm);
       setIsEditMode(false);
     }
-  }, []);
+  }, [managers]);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [showTerminateModal, setShowTerminateModal] = useState(false);
-  const [terminateDate, setTerminateDate] = useState("");
-  const [terminateLoading, setTerminateLoading] = useState(false);
-  const [terminateError, setTerminateError] = useState<string | null>(null);
-  const [managerDropdownOpen, setManagerDropdownOpen] = useState(false);
-  const managerDropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        managerDropdownRef.current &&
-        !managerDropdownRef.current.contains(event.target as Node)
-      ) {
-        setManagerDropdownOpen(false);
-      }
-    }
-    if (managerDropdownOpen) {
-      document.addEventListener("click", handleClickOutside);
-    }
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, [managerDropdownOpen]);
-
-  const editingEmployeeId = isEditMode ? form.employeeId : undefined;
-  const isTerminatedView = isEditMode && form.status === "Terminated";
-
-  const managerOptions = managers.filter(
-    (emp) => emp.employeeId !== editingEmployeeId
-  );
-  const selectedManager = form.managerId
-    ? managerOptions.find((emp) => emp.employeeId === form.managerId)
-    : null;
+  const isTerminatedView = false;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (isEditMode && form.status === "Terminated") return;
     if (isEditMode && form.employeeId) {
       setSubmitting(true);
       setSubmitError(null);
       try {
-        const payload = {
-          firstName: form.firstName,
-          lastName: form.lastName,
-          email: form.email,
-          department: form.department,
-          title: form.jobTitle,
-          status: form.status.toUpperCase(),
-          managerId: form.managerId || null,
-        };
+        const payload = toEmployeePayload(form);
         const res = await fetch(`/api/employees/${form.employeeId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -138,12 +267,18 @@ export default function CreateUserPage() {
           const err = await res.json().catch(() => ({}));
           throw new Error((err as { error?: string }).error || `Update failed: ${res.status}`);
         }
-        const manager = form.managerId
-          ? managers.find((emp) => emp.employeeId === form.managerId)
+        const manager = form.managerID
+          ? managers.find((emp) => emp.employeeId === form.managerID)
           : null;
         const updated: UserRow = {
-          ...form,
-          managerId: form.managerId || undefined,
+          firstName: form.firstname,
+          lastName: form.lastName,
+          department: form.department,
+          email: form.emailAddressWork,
+          status: form.active ? "Active" : "Inactive",
+          jobTitle: form.positionTitle,
+          employeeId: form.employeeId,
+          managerId: form.managerID || undefined,
           managerName: manager
             ? `${manager.firstName} ${manager.lastName}`
             : undefined,
@@ -157,13 +292,18 @@ export default function CreateUserPage() {
         setSubmitting(false);
       }
     } else if (isEditMode) {
-      const { managerId, ...userRow } = form;
-      const manager = managerId
-        ? managers.find((emp) => emp.employeeId === managerId)
+      const manager = form.managerID
+        ? managers.find((emp) => emp.employeeId === form.managerID)
         : null;
       const updated: UserRow = {
-        ...userRow,
-        managerId: managerId || undefined,
+        firstName: form.firstname,
+        lastName: form.lastName,
+        department: form.department,
+        email: form.emailAddressWork,
+        status: form.active ? "Active" : "Inactive",
+        jobTitle: form.positionTitle,
+        employeeId: form.employeeId,
+        managerId: form.managerID || undefined,
         managerName: manager
           ? `${manager.firstName} ${manager.lastName}`
           : undefined,
@@ -175,17 +315,7 @@ export default function CreateUserPage() {
       setSubmitting(true);
       setSubmitError(null);
       try {
-        const employeeNumber = "E" + Date.now().toString().slice(-6);
-        const payload = {
-          employeeNumber,
-          firstName: form.firstName,
-          lastName: form.lastName,
-          email: form.email,
-          department: form.department,
-          title: form.jobTitle,
-          status: form.status.toUpperCase(),
-          managerId: form.managerId || null,
-        };
+        const payload = toEmployeePayload(form);
         const res = await fetch(EMPLOYEES_API, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -208,29 +338,7 @@ export default function CreateUserPage() {
     "w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-[#0045ff] focus:outline-none focus:ring-1 focus:ring-[#0045ff] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500";
   const inputDisabledClass =
     inputClass + " cursor-not-allowed bg-slate-100 opacity-90 dark:bg-slate-800/80";
-  const labelClass =
-    "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
-
-  async function handleTerminateConfirm() {
-    if (!form.employeeId || !terminateDate) return;
-    setTerminateLoading(true);
-    setTerminateError(null);
-    try {
-      const url = `/api/employees/${form.employeeId}/terminate?terminationDate=${encodeURIComponent(terminateDate)}`;
-      const res = await fetch(url, { method: "POST" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error((data as { error?: string }).error || `Terminate failed: ${res.status}`);
-      }
-      setShowTerminateModal(false);
-      setTerminateDate("");
-      router.push("/dashboard/users");
-    } catch (err) {
-      setTerminateError(err instanceof Error ? err.message : "Terminate failed");
-    } finally {
-      setTerminateLoading(false);
-    }
-  }
+  const labelClass = "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
 
   return (
     <div className="px-6 py-8 lg:px-10 lg:py-12">
@@ -239,28 +347,6 @@ export default function CreateUserPage() {
           <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
             {isEditMode ? "Edit User" : "Create User"}
           </h2>
-          {isEditMode && !isTerminatedView && (
-            <button
-              type="button"
-              onClick={() => {
-                setTerminateError(null);
-                setTerminateDate(new Date().toISOString().slice(0, 10));
-                setShowTerminateModal(true);
-              }}
-              className="flex items-center gap-2 rounded-lg border border-amber-500/60 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-500/40 dark:bg-amber-900/20 dark:text-amber-200 dark:hover:bg-amber-900/30"
-              aria-label="Terminate employee"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-                />
-              </svg>
-              Terminate
-            </button>
-          )}
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8">
@@ -273,12 +359,11 @@ export default function CreateUserPage() {
                 id="firstName"
                 type="text"
                 required
-                value={form.firstName}
+                value={form.firstname}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, firstName: e.target.value }))
+                  setForm((p) => ({ ...p, firstname: e.target.value }))
                 }
                 className={isTerminatedView ? inputDisabledClass : inputClass}
-                placeholder="First name"
                 disabled={isTerminatedView}
               />
             </div>
@@ -295,7 +380,6 @@ export default function CreateUserPage() {
                   setForm((p) => ({ ...p, lastName: e.target.value }))
                 }
                 className={isTerminatedView ? inputDisabledClass : inputClass}
-                placeholder="Last name"
                 disabled={isTerminatedView}
               />
             </div>
@@ -312,7 +396,6 @@ export default function CreateUserPage() {
                   setForm((p) => ({ ...p, department: e.target.value }))
                 }
                 className={isTerminatedView ? inputDisabledClass : inputClass}
-                placeholder="Department"
                 disabled={isTerminatedView}
               />
             </div>
@@ -324,33 +407,29 @@ export default function CreateUserPage() {
                 id="email"
                 type="email"
                 required
-                value={form.email}
+                value={form.emailAddressWork}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, email: e.target.value }))
+                  setForm((p) => ({ ...p, emailAddressWork: e.target.value }))
                 }
                 className={isTerminatedView ? inputDisabledClass : inputClass}
-                placeholder="email@company.com"
                 disabled={isTerminatedView}
               />
             </div>
             <div>
-              <label htmlFor="status" className={labelClass}>
-                Status
+              <label htmlFor="active" className={labelClass}>
+                Active
               </label>
               <select
-                id="status"
-                value={form.status}
+                id="active"
+                value={form.active ? "true" : "false"}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, status: e.target.value }))
+                  setForm((p) => ({ ...p, active: e.target.value === "true" }))
                 }
                 className={isTerminatedView ? inputDisabledClass : inputClass}
                 disabled={isTerminatedView}
               >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-                {isTerminatedView && (
-                  <option value="Terminated">Terminated</option>
-                )}
+                <option value="true">True</option>
+                <option value="false">False</option>
               </select>
             </div>
             <div>
@@ -361,88 +440,211 @@ export default function CreateUserPage() {
                 id="jobTitle"
                 type="text"
                 required
-                value={form.jobTitle}
+                value={form.positionTitle}
                 onChange={(e) =>
-                  setForm((p) => ({ ...p, jobTitle: e.target.value }))
+                  setForm((p) => ({ ...p, positionTitle: e.target.value }))
                 }
                 className={isTerminatedView ? inputDisabledClass : inputClass}
-                placeholder="Job title"
                 disabled={isTerminatedView}
               />
             </div>
-            <div ref={managerDropdownRef}>
-              <label id="manager-label" className={labelClass}>
-                Manager
+            <div>
+              <label htmlFor="username" className={labelClass}>
+                Username
               </label>
-              <div className="relative">
-                <button
-                  type="button"
-                  id="manager"
-                  aria-haspopup="listbox"
-                  aria-expanded={managerDropdownOpen}
-                  aria-labelledby="manager-label"
-                  onClick={() =>
-                    !managersLoading &&
-                    !isTerminatedView &&
-                    setManagerDropdownOpen((open) => !open)
-                  }
-                  disabled={managersLoading || isTerminatedView}
-                  className={`w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-left text-slate-900 focus:border-[#0045ff] focus:outline-none focus:ring-1 focus:ring-[#0045ff] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 ${
-                    isTerminatedView || managersLoading
-                      ? "cursor-not-allowed bg-slate-100 opacity-90 dark:bg-slate-800/80"
-                      : ""
-                  } flex items-center justify-between gap-2`}
-                >
-                  <span className="truncate">
-                    {selectedManager
-                      ? `${selectedManager.firstName} ${selectedManager.lastName}${selectedManager.employeeNumber ? ` (${selectedManager.employeeNumber})` : ""}`
-                      : "Select manager"}
-                  </span>
-                  <svg
-                    className={`h-4 w-4 shrink-0 text-slate-500 transition-transform ${managerDropdownOpen ? "rotate-180" : ""}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {managerDropdownOpen && (
-                  <ul
-                    role="listbox"
-                    aria-labelledby="manager-label"
-                    className="absolute z-10 mt-1 w-full overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-600 dark:bg-slate-800"
-                    style={{ maxHeight: "12.5rem" }}
-                  >
-                    <li
-                      role="option"
-                      aria-selected={!form.managerId}
-                      className="cursor-pointer px-4 py-2.5 text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-700"
-                      onClick={() => {
-                        setForm((p) => ({ ...p, managerId: "" }));
-                        setManagerDropdownOpen(false);
-                      }}
-                    >
-                      —
-                    </li>
-                    {managerOptions.map((emp) => (
-                      <li
-                        key={emp.employeeId}
-                        role="option"
-                        aria-selected={form.managerId === emp.employeeId}
-                        className="cursor-pointer px-4 py-2.5 text-slate-900 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-700"
-                        onClick={() => {
-                          setForm((p) => ({ ...p, managerId: emp.employeeId }));
-                          setManagerDropdownOpen(false);
-                        }}
-                      >
-                        {emp.firstName} {emp.lastName}
-                        {emp.employeeNumber ? ` (${emp.employeeNumber})` : ""}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
+              <input
+                id="username"
+                type="text"
+                required
+                value={form.username}
+                onChange={(e) => setForm((p) => ({ ...p, username: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="employeeID" className={labelClass}>
+                Employee ID
+              </label>
+              <input
+                id="employeeID"
+                type="text"
+                required
+                value={form.employeeID}
+                onChange={(e) => setForm((p) => ({ ...p, employeeID: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="workerType" className={labelClass}>
+                Worker Type
+              </label>
+              <input
+                id="workerType"
+                type="text"
+                required
+                value={form.workerType}
+                onChange={(e) => setForm((p) => ({ ...p, workerType: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="managerID" className={labelClass}>
+                Manager ID
+              </label>
+              <input
+                id="managerID"
+                type="text"
+                value={form.managerID}
+                onChange={(e) => setForm((p) => ({ ...p, managerID: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="phoneNumberWork" className={labelClass}>
+                Work Phone
+              </label>
+              <input
+                id="phoneNumberWork"
+                type="text"
+                value={form.phoneNumberWork}
+                onChange={(e) => setForm((p) => ({ ...p, phoneNumberWork: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="phoneNumberHome" className={labelClass}>
+                Home Phone
+              </label>
+              <input
+                id="phoneNumberHome"
+                type="text"
+                value={form.phoneNumberHome}
+                onChange={(e) => setForm((p) => ({ ...p, phoneNumberHome: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="organizationName" className={labelClass}>
+                Organization Name
+              </label>
+              <input
+                id="organizationName"
+                type="text"
+                value={form.organizationName}
+                onChange={(e) => setForm((p) => ({ ...p, organizationName: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="costCenterId" className={labelClass}>
+                Cost Center ID
+              </label>
+              <input
+                id="costCenterId"
+                type="text"
+                value={form.costCenterId}
+                onChange={(e) => setForm((p) => ({ ...p, costCenterId: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="streetAddress" className={labelClass}>
+                Street Address
+              </label>
+              <input
+                id="streetAddress"
+                type="text"
+                value={form.streetAddress}
+                onChange={(e) => setForm((p) => ({ ...p, streetAddress: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="city" className={labelClass}>
+                City
+              </label>
+              <input
+                id="city"
+                type="text"
+                value={form.city}
+                onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="state" className={labelClass}>
+                State
+              </label>
+              <input
+                id="state"
+                type="text"
+                value={form.state}
+                onChange={(e) => setForm((p) => ({ ...p, state: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="country" className={labelClass}>
+                Country
+              </label>
+              <input
+                id="country"
+                type="text"
+                value={form.country}
+                onChange={(e) => setForm((p) => ({ ...p, country: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="postalCode" className={labelClass}>
+                Postal Code
+              </label>
+              <input
+                id="postalCode"
+                type="text"
+                value={form.postalCode}
+                onChange={(e) => setForm((p) => ({ ...p, postalCode: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="continousServiceDate" className={labelClass}>
+                Continous Service Date
+              </label>
+              <input
+                id="continousServiceDate"
+                type="date"
+                value={form.continousServiceDate}
+                onChange={(e) => setForm((p) => ({ ...p, continousServiceDate: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
+            </div>
+            <div>
+              <label htmlFor="terminationDate" className={labelClass}>
+                Termination Date
+              </label>
+              <input
+                id="terminationDate"
+                type="date"
+                value={form.terminationDate}
+                onChange={(e) => setForm((p) => ({ ...p, terminationDate: e.target.value }))}
+                className={isTerminatedView ? inputDisabledClass : inputClass}
+                disabled={isTerminatedView}
+              />
             </div>
           </div>
           {submitError && (
@@ -455,83 +657,22 @@ export default function CreateUserPage() {
             >
               Cancel
             </Link>
-            {!isTerminatedView && (
-              <button
-                type="submit"
-                disabled={submitting}
-                className="rounded-lg bg-[#0045ff] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
-              >
-                {submitting
-                  ? isEditMode
-                    ? "Updating…"
-                    : "Creating…"
-                  : isEditMode
-                    ? "Update"
-                    : "Submit"}
-              </button>
-            )}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="rounded-lg bg-[#0045ff] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-50"
+            >
+              {submitting
+                ? isEditMode
+                  ? "Updating…"
+                  : "Creating…"
+                : isEditMode
+                  ? "Update"
+                  : "Submit"}
+            </button>
           </div>
         </form>
       </div>
-
-      {showTerminateModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="terminate-dialog-title"
-        >
-          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800">
-            <h3 id="terminate-dialog-title" className="text-lg font-semibold text-slate-900 dark:text-slate-50">
-              Terminate employee
-            </h3>
-            <p className="mt-2 text-slate-600 dark:text-slate-400">
-              Set a termination date for{" "}
-              <span className="font-medium text-slate-900 dark:text-slate-100">
-                {form.firstName} {form.lastName}
-              </span>
-              .
-            </p>
-            <div className="mt-4">
-              <label htmlFor="terminate-date" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Termination date
-              </label>
-              <input
-                id="terminate-date"
-                type="date"
-                required
-                value={terminateDate}
-                onChange={(e) => setTerminateDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 focus:border-[#0045ff] focus:outline-none focus:ring-1 focus:ring-[#0045ff] dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100"
-              />
-            </div>
-            {terminateError && (
-              <p className="mt-3 text-sm text-red-600 dark:text-red-400">{terminateError}</p>
-            )}
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                disabled={terminateLoading}
-                onClick={() => {
-                  setTerminateError(null);
-                  setShowTerminateModal(false);
-                }}
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={terminateLoading || !terminateDate}
-                onClick={handleTerminateConfirm}
-                className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:opacity-50 dark:focus:ring-offset-slate-800"
-              >
-                {terminateLoading ? "Saving…" : "Confirm"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
