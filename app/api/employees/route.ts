@@ -13,7 +13,7 @@ type UpstreamEmployeeResource = {
   emailAddressWork?: string;
   department?: string;
   positionTitle?: string;
-  active?: boolean;
+  active?: boolean | string;
   terminationDate?: string | null;
   status?: string;
   managerID?: string;
