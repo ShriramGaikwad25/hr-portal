@@ -49,7 +49,7 @@ export default function DashboardLayout({
             isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
           />
-          <main className="ml-72 h-[calc(100vh-80px)] overflow-auto p-10">
+          <main className="ml-72 h-[calc(100vh-80px)] overflow-auto px-6 pt-4 pb-8 lg:px-10 lg:pt-5">
             {children}
           </main>
         </div>

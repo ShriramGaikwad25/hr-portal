@@ -10,6 +10,10 @@ const EDIT_USER_KEY = "hr-portal-edit-user";
 const UPDATED_USER_KEY = "hr-portal-updated-user";
 const EMPLOYEES_API = "/api/employees";
 
+type PendingSuccess =
+  | { kind: "create" }
+  | { kind: "edit"; updated: UserRow };
+
 type ApiEmployee = {
   employeeId: string;
   employeeNumber: string;
@@ -249,7 +253,21 @@ export default function CreateUserPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [pendingAfterSuccess, setPendingAfterSuccess] = useState<PendingSuccess | null>(null);
   const isTerminatedView = false;
+
+  function handleSuccessModalOk() {
+    if (pendingAfterSuccess?.kind === "edit") {
+      sessionStorage.setItem(UPDATED_USER_KEY, JSON.stringify(pendingAfterSuccess.updated));
+      sessionStorage.removeItem(EDIT_USER_KEY);
+    }
+    setPendingAfterSuccess(null);
+    setSuccessMessage("");
+    setSuccessModalOpen(false);
+    router.push("/dashboard/users");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -278,14 +296,20 @@ export default function CreateUserPage() {
           status: form.active ? "Active" : "Inactive",
           jobTitle: form.positionTitle,
           employeeId: form.employeeId,
+          username: form.username || undefined,
           managerId: form.managerID || undefined,
           managerName: manager
             ? `${manager.firstName} ${manager.lastName}`
             : undefined,
         };
-        sessionStorage.setItem(UPDATED_USER_KEY, JSON.stringify(updated));
-        sessionStorage.removeItem(EDIT_USER_KEY);
-        router.push("/dashboard/users");
+        const displayName = `${form.firstname} ${form.lastName}`.trim();
+        setSuccessMessage(
+          displayName
+            ? `Employee "${displayName}" was updated successfully.`
+            : "Employee was updated successfully."
+        );
+        setPendingAfterSuccess({ kind: "edit", updated });
+        setSuccessModalOpen(true);
       } catch (err) {
         setSubmitError(err instanceof Error ? err.message : "Update failed");
       } finally {
@@ -303,14 +327,20 @@ export default function CreateUserPage() {
         status: form.active ? "Active" : "Inactive",
         jobTitle: form.positionTitle,
         employeeId: form.employeeId,
+        username: form.username || undefined,
         managerId: form.managerID || undefined,
         managerName: manager
           ? `${manager.firstName} ${manager.lastName}`
           : undefined,
       };
-      sessionStorage.setItem(UPDATED_USER_KEY, JSON.stringify(updated));
-      sessionStorage.removeItem(EDIT_USER_KEY);
-      router.push("/dashboard/users");
+      const displayName = `${form.firstname} ${form.lastName}`.trim();
+      setSuccessMessage(
+        displayName
+          ? `Employee "${displayName}" was updated successfully.`
+          : "Employee was updated successfully."
+      );
+      setPendingAfterSuccess({ kind: "edit", updated });
+      setSuccessModalOpen(true);
     } else {
       setSubmitting(true);
       setSubmitError(null);
@@ -325,7 +355,14 @@ export default function CreateUserPage() {
           const err = await res.json().catch(() => ({}));
           throw new Error((err as { error?: string }).error || `Create failed: ${res.status}`);
         }
-        router.push("/dashboard/users");
+        const displayName = `${form.firstname} ${form.lastName}`.trim();
+        setSuccessMessage(
+          displayName
+            ? `Employee "${displayName}" was created successfully.`
+            : "Employee was created successfully."
+        );
+        setPendingAfterSuccess({ kind: "create" });
+        setSuccessModalOpen(true);
       } catch (err) {
         setSubmitError(err instanceof Error ? err.message : "Create failed");
       } finally {
@@ -341,7 +378,7 @@ export default function CreateUserPage() {
   const labelClass = "mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300";
 
   return (
-    <div className="px-6 py-8 lg:px-10 lg:py-12">
+    <div className="px-0 py-4 lg:py-5">
       <div className="w-full">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
@@ -401,7 +438,7 @@ export default function CreateUserPage() {
             </div>
             <div>
               <label htmlFor="email" className={labelClass}>
-                Email
+                Personal Email
               </label>
               <input
                 id="email"
@@ -622,7 +659,7 @@ export default function CreateUserPage() {
             </div>
             <div>
               <label htmlFor="continousServiceDate" className={labelClass}>
-                Continous Service Date
+                Start Date
               </label>
               <input
                 id="continousServiceDate"
@@ -673,6 +710,34 @@ export default function CreateUserPage() {
           </div>
         </form>
       </div>
+
+      {successModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="success-dialog-title"
+        >
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800">
+            <h3
+              id="success-dialog-title"
+              className="text-lg font-semibold text-slate-900 dark:text-slate-50"
+            >
+              Success
+            </h3>
+            <p className="mt-3 text-slate-600 dark:text-slate-400">{successMessage}</p>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={handleSuccessModalOk}
+                className="rounded-lg bg-[#0045ff] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#0045ff] focus:ring-offset-2 dark:focus:ring-offset-slate-800"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

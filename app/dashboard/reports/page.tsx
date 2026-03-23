@@ -1,6 +1,6 @@
 export default function ReportsPage() {
   return (
-    <div className="px-6 py-8 lg:px-10 lg:py-12">
+    <div className="px-0 py-4 lg:py-5">
       <section className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-12">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
           Reports

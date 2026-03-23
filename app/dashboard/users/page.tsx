@@ -53,6 +53,9 @@ export default function ManageUserPage() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /** Inline success moved to create/edit modal; state kept for compatibility if referenced */
+  const [createSuccessMessage] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState("");
 
   const fetchEmployees = useCallback(async () => {
     setLoading(true);
@@ -113,20 +116,39 @@ export default function ManageUserPage() {
   }
 
   return (
-    <div className="px-6 py-8 lg:px-10 lg:py-12">
-      <div className="flex items-center justify-between">
+    <div className="px-0 py-4 lg:py-5">
+      <div>
         <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
           Manage Employee
         </h2>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-3 sm:mt-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="w-full min-w-0 sm:w-1/3">
+          <input
+            type="text"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="Search employees"
+            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 focus:border-[#0045ff] focus:outline-none focus:ring-1 focus:ring-[#0045ff] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100"
+            aria-label="Search employees"
+          />
+        </div>
         <Link
           href="/dashboard/users/create"
-          className="rounded-lg bg-[#0045ff] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#0045ff] focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+          className="inline-flex shrink-0 items-center justify-center rounded-lg bg-[#0045ff] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#0045ff] focus:ring-offset-2 dark:focus:ring-offset-slate-950 sm:self-auto"
         >
           Create
         </Link>
       </div>
 
-      <div className="mt-8">
+      {createSuccessMessage ? (
+        <p className="sr-only" role="status">
+          {createSuccessMessage}
+        </p>
+      ) : null}
+
+      <div className="mt-4">
         {loading && (
           <p className="text-slate-600 dark:text-slate-400">Loading employees…</p>
         )}
@@ -134,7 +156,11 @@ export default function ManageUserPage() {
           <p className="text-red-600 dark:text-red-400">{error}</p>
         )}
         {!loading && !error && (
-          <UsersGrid rowData={users} onEdit={openEdit} />
+          <UsersGrid
+            rowData={users}
+            onEdit={openEdit}
+            quickFilterText={searchText}
+          />
         )}
       </div>
     </div>

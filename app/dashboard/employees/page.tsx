@@ -1,6 +1,6 @@
 export default function EmployeesPage() {
   return (
-    <div className="px-6 py-8 lg:px-10 lg:py-12">
+    <div className="px-0 py-4 lg:py-5">
       <h2 className="text-3xl font-bold tracking-tight text-slate-900">
         Employee Management
       </h2>
