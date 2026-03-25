@@ -659,7 +659,7 @@ export default function CreateUserPage() {
             </div>
             <div>
               <label htmlFor="continousServiceDate" className={labelClass}>
-                Start Date
+                Date of Birth
               </label>
               <input
                 id="continousServiceDate"
